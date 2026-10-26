@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "minilytics",
+  // The account that owns the thetestingacademy.com zone. Pinned so a deploy can never land in another account
+  // wrangler happens to be logged in to.
+  "account_id": "2875da4dca1377ad31789ea7f4e9a41b",
   "main": "src/worker/index.ts",
   "compatibility_date": "2025-09-01",
   "observability": { "enabled": true },
@@ -27,7 +30,7 @@
       "binding": "DB",
       "database_name": "minilytics",
       // Replace with the id printed by `npx wrangler d1 create minilytics`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "1d08a15e-2c41-4ae5-b339-22e369bc70ec",
       "migrations_dir": "migrations"
     }
   ]

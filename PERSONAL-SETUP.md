@@ -14,11 +14,17 @@ thetestingacademy.com first. The `personal-hardened` branch is:
   - an **Ad** tab (`utm_content`) next to Campaign and Keyword on the dashboard
   - `snippets/flexifunnels-webinar.html`, which records webinar registrations on class.thetestingacademy.com
 
+**Status, 2026-10-26:** deployed to https://insights.thetestingacademy.com from contact@thetestingacademy.com's
+account, with the D1 database `minilytics` (`1d08a15e-2c41-4ae5-b339-22e369bc70ec`, APAC) and migrations 0001 to
+0004 applied.
+
 ## Before the first deploy
 
 1. **Log in to the right Cloudflare account.** The Worker has to live in the account that holds the
-   thetestingacademy.com zone, or the custom domain can't attach. `npx wrangler whoami` shows the account. If your
-   login has more than one, wrangler asks which to use: pick the one with thetestingacademy.com.
+   thetestingacademy.com zone, or the custom domain can't attach. That is **contact@thetestingacademy.com**'s account
+   (`2875da4dca1377ad31789ea7f4e9a41b`), pinned as `account_id` in `wrangler.jsonc`. The luckydutta96 and qaskills
+   accounts don't hold the zone. `npx wrangler whoami` must show contact@thetestingacademy.com; to switch, sign in to
+   dash.cloudflare.com as that email first, then run `npx wrangler logout` and `npx wrangler login`.
 2. **Leave the hostname without a DNS record.** Don't create one by hand: the first deploy creates the DNS record
    and the certificate itself, and Cloudflare refuses a custom domain on a hostname that already has a CNAME. On
    2026-10-26, `insights`, `analytics`, `stats` and `metrics` under thetestingacademy.com had no records and the
