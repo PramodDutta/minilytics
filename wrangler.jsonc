@@ -4,6 +4,19 @@
   "main": "src/worker/index.ts",
   "compatibility_date": "2025-09-01",
   "observability": { "enabled": true },
+  // The public URL (https://minilytics.<subdomain>.workers.dev). It stays on until a custom domain works,
+  // because with no route the Worker would have no URL at all. Set it to false once the custom domain loads.
+  // Written out on purpose: when this key is missing, wrangler turns workers.dev off as soon as "routes" exists.
+  "workers_dev": true,
+  // Version URLs (<version>-minilytics.<subdomain>.workers.dev) are created by every deploy and run that
+  // version's code against the same database, and Cloudflare documents no expiry, so a version from before a
+  // security fix would stay public. Nothing here uses them. When this key is missing, they follow workers.dev.
+  "preview_urls": false,
+  // Custom domain (optional). The zone must be on Cloudflare in the same account. Uncomment, deploy, check the
+  // dashboard loads there, then set "workers_dev" to false and deploy again. See PERSONAL-SETUP.md.
+  // "routes": [
+  //   { "pattern": "stats.example.com", "custom_domain": true }
+  // ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
