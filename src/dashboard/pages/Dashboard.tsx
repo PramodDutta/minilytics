@@ -16,6 +16,7 @@ const FILTER_LABELS: Record<string, { label: string; dim: string }> = {
   source: { label: 'Referrer', dim: 'source' },
   utm_campaign: { label: 'Campaign', dim: 'campaign' },
   utm_term: { label: 'Keyword', dim: 'keyword' },
+  utm_content: { label: 'Ad', dim: 'utm_content' },
   utm_source: { label: 'UTM source', dim: 'utm_source' },
   utm_medium: { label: 'UTM medium', dim: 'utm_medium' },
   ref: { label: 'Ref', dim: 'ref' },
@@ -104,6 +105,7 @@ export function Dashboard({ siteId }: { siteId: string }) {
               { label: 'Referrer', dim: 'source', filter: 'source' },
               { label: 'Campaign', dim: 'campaign', filter: 'utm_campaign' },
               { label: 'Keyword', dim: 'keyword', filter: 'utm_term' },
+              { label: 'Ad', dim: 'utm_content', filter: 'utm_content' },
             ]}
           />
           <Panel
