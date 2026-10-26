@@ -56,6 +56,9 @@ export const KNOWN_SOURCES: KnownSource[] = [
 ];
 
 const PAID_MEDIUM = /^(cpc|ppc|cpm|paid|paid[_-]?social|paidsearch|ads?|display|retargeting|sponsored)$/i;
+// Meta fills utm_source from its {{placement}} / {{site_source_name}} macros (Instagram_Reels, Facebook_Mobile_Feed…),
+// which only ever appear on ad clicks.
+const META_PLACEMENT = /^(instagram|facebook|messenger|audience_network|threads)_[a-z_]+$/i;
 const EMAIL_MEDIUM = /^(e-?mail|newsletter)$/i;
 const SOCIAL_MEDIUM = /^(social|social[_-]?media|sm)$/i;
 
@@ -87,7 +90,9 @@ export function classify(input: {
 }): Attribution {
   const { referrerDomain, utmSource, utmMedium, ref } = input;
   const tag = utmSource || ref || null;
-  const known = findKnownSource(tag) ?? findKnownSource(referrerDomain);
+  // "Instagram_Reels" counts as Instagram, so placements roll up under one source.
+  const placement = utmSource && META_PLACEMENT.test(utmSource) ? utmSource.split('_')[0] : null;
+  const known = findKnownSource(placement ?? tag) ?? findKnownSource(referrerDomain);
 
   let source: string;
   if (known) source = known.name;
@@ -96,7 +101,9 @@ export function classify(input: {
   else source = 'Direct/None';
 
   let channel: Channel;
-  if (utmMedium && PAID_MEDIUM.test(utmMedium)) channel = 'Paid';
+  // Ad managers build mediums from ad-set names ("TF | ATB | Free | LP2 | …"); hand-written tags never contain "|".
+  if (utmMedium && (PAID_MEDIUM.test(utmMedium) || utmMedium.includes('|'))) channel = 'Paid';
+  else if (placement) channel = 'Paid';
   else if (utmMedium && EMAIL_MEDIUM.test(utmMedium)) channel = 'Email';
   else if (known) channel = known.channel;
   else if (utmMedium && SOCIAL_MEDIUM.test(utmMedium)) channel = 'Organic Social';

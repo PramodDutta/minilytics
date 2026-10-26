@@ -24,6 +24,20 @@ describe('classify', () => {
     expect(classify({ referrerDomain: 'google.com', utmMedium: 'cpc' }).channel).toBe('Paid');
     expect(classify({ referrerDomain: null, utmSource: 'buttondown', utmMedium: 'email' }).channel).toBe('Email');
   });
+  it('counts ad clicks as Paid: Meta placements and templated "|" mediums', () => {
+    expect(classify({ referrerDomain: 'instagram.com', utmSource: 'Instagram_Reels', utmMedium: 'TF | ATB | Free | LP2' })).toMatchObject({
+      source: 'Instagram',
+      channel: 'Paid',
+    });
+    expect(classify({ referrerDomain: 'm.facebook.com', utmSource: 'Facebook_Mobile_Reels' })).toMatchObject({ source: 'Facebook', channel: 'Paid' });
+    expect(classify({ referrerDomain: 'youtube.com', utmSource: 'Google', utmMedium: 'LP4 | DGen | Tier1' })).toMatchObject({
+      source: 'Google',
+      channel: 'Paid',
+    });
+    expect(classify({ referrerDomain: 'm.facebook.com', utmSource: 'ig', utmMedium: 'TF | ATB | CBO' }).channel).toBe('Paid');
+    // Hand-tagged organic links stay organic.
+    expect(classify({ referrerDomain: 'instagram.com', utmSource: 'ig', utmMedium: 'social' })).toMatchObject({ source: 'Instagram', channel: 'Organic Social' });
+  });
   it('falls back to Direct', () => {
     expect(classify({ referrerDomain: null })).toMatchObject({ source: 'Direct/None', channel: 'Direct' });
   });
