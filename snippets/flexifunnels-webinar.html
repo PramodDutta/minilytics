@@ -1,0 +1,27 @@
+<!--
+  Minilytics on FlexiFunnels (class.thetestingacademy.com).
+  Paste this whole block into the funnel's tracking / head code so it runs on every funnel step, and replace
+  SITE_ID with the id of the thetestingacademy.com site (Minilytics dashboard -> the site's Settings).
+
+  When FlexiFunnels shows a page with ?event=completeregistration (a successful webinar registration), this
+  records the goal "webinar_registered" and attaches the registrant's email and name to the visitor, so a later
+  payment with the same email is credited to the visit that brought them.
+-->
+<script>
+  window.minilytics = window.minilytics || function () { (window.minilytics.q = window.minilytics.q || []).push(arguments); };
+  (function () {
+    var q = new URLSearchParams(location.search);
+    if (q.get('event') !== 'completeregistration') return;
+    // Count each registration page once per tab, so reloading the thank-you page doesn't add another one.
+    var key = 'ml_webinar_registered:' + location.pathname;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch (e) {}
+    var email = q.get('email') || q.get('ff_email');
+    var name = q.get('name') || q.get('ff_name');
+    if (email || name) window.minilytics('identify', { email: email || undefined, name: name || undefined });
+    window.minilytics('goal', 'webinar_registered');
+  })();
+</script>
+<script defer data-website-id="SITE_ID" src="https://insights.thetestingacademy.com/js/script.js"></script>
