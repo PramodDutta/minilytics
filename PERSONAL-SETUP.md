@@ -14,9 +14,11 @@ thetestingacademy.com first. The `personal-hardened` branch is:
   - an **Ad** tab (`utm_content`) next to Campaign and Keyword on the dashboard
   - `snippets/flexifunnels-webinar.html`, which records webinar registrations on class.thetestingacademy.com
 
-**Status, 2026-10-26:** deployed to https://insights.thetestingacademy.com from contact@thetestingacademy.com's
+**Status, 2026-10-27:** deployed to https://insights.thetestingacademy.com from contact@thetestingacademy.com's
 account, with the D1 database `minilytics` (`1d08a15e-2c41-4ae5-b339-22e369bc70ec`, APAC) and migrations 0001 to
-0004 applied.
+0004 applied. Tagged: the main site (Dorik), all four FlexiFunnels projects on `class.`, every page on `app.`, and
+scrolltest.com (its own site entry). Not tagged yet: `courses.` (New Zenler) and the Pabbly checkout on `billing.`
+(steps 4 and 5).
 
 ## Before the first deploy
 
@@ -126,12 +128,18 @@ If a page sends a Content-Security-Policy, add `https://insights.thetestingacade
    the tag too.
 3. **class.thetestingacademy.com** (FlexiFunnels webinars): paste
    [`snippets/flexifunnels-webinar.html`](snippets/flexifunnels-webinar.html) into the funnel's tracking/head code so
-   it runs on every funnel step, with `SITE_ID` replaced. On the page that loads with `?event=completeregistration`,
-   it records the goal `webinar_registered` and identifies the registrant (`email`, else `ff_email`; `name`, else
-   `ff_name`). A reload in the same tab doesn't count twice. Without it, registrations are invisible: the query
-   string is never stored.
-4. **courses.thetestingacademy.com** (New Zenler), optional: paste the tag into New Zenler's custom head code, if
-   the plan allows custom code.
+   it runs on every funnel step, with `SITE_ID` replaced. The Worker counts the registrations: when a visit reaches a
+   page on `class.` whose path contains `thank` (such as `/thank-you-aatb`) from another page, it records the goal
+   `webinar_registered`, once per visit (`CONVERSION_PAGES` in `src/worker/collect.ts`). A visit that starts on the
+   thank-you page, such as a reopened link, doesn't count. On a page that loads with `?event=completeregistration`
+   the snippet also sends the goal (still counted once) and identifies the registrant (`email`, else `ff_email`;
+   `name`, else `ff_name`), but FlexiFunnels' thank-you pages carry no such query today.
+4. **courses.thetestingacademy.com** (New Zenler): paste the tag into **Site > Site Settings > Global Includes**,
+   scoped to all pages. The main site's course links and the `sdet.live` home page lead here.
+5. **billing.thetestingacademy.com** (Pabbly checkout for the paid programs): Pabbly's checkout customizer has no
+   field for scripts, so the page can't carry the tag. Clicks to it aren't counted either: the tracker records an
+   outbound click only for links that leave the root domain, and `billing.` shares it. Links to
+   `payments.pabbly.com` do count as outbound.
 
 **sdet.live** short links need no tag, since they redirect with JavaScript. By default the browser strips the path
 from the referrer, so the dashboard shows only "sdet.live", not which link. Add `?ref=<link-name>` to each short
