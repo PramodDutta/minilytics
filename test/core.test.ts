@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { classify } from '../src/shared/sources';
-import { belongsTo, normalizePath } from '../src/worker/collect';
+import { belongsTo, conversionGoal, normalizePath } from '../src/worker/collect';
 import { verifyStandardWebhook } from '../src/worker/lib/crypto';
 import { bucketLabels, resolveRange, startOfDay, tzOffset } from '../src/worker/lib/time';
 import { isBot, parseUA } from '../src/worker/lib/ua';
@@ -65,6 +65,12 @@ describe('domains and paths', () => {
     expect(belongsTo('app.shipkit.dev', 'shipkit.dev')).toBe(true);
     expect(belongsTo('www.shipkit.dev', 'shipkit.dev')).toBe(true);
     expect(belongsTo('evilshipkit.dev', 'shipkit.dev')).toBe(false);
+  });
+  it('treats thank-you pages on class.thetestingacademy.com as webinar registrations', () => {
+    expect(conversionGoal('class.thetestingacademy.com', '/thank-you-aatb')).toBe('webinar_registered');
+    expect(conversionGoal('class.thetestingacademy.com', '/playwright-thank-you')).toBe('webinar_registered');
+    expect(conversionGoal('class.thetestingacademy.com', '/ai-automation-tester-blueprint')).toBeNull();
+    expect(conversionGoal('thetestingacademy.com', '/thank-you')).toBeNull();
   });
   it('normalises paths', () => {
     expect(normalizePath('/pricing/')).toBe('/pricing');

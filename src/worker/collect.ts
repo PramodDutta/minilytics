@@ -7,6 +7,20 @@ import { creditedSessionSql } from './payments';
 const TYPES = new Set(['pageview', 'goal', 'outbound', 'ping', 'identify']);
 const MAX_PING_MS = 10 * 60_000;
 
+/**
+ * Pages that record a goal when a visit reaches them from another page. FlexiFunnels thank-you pages carry no query
+ * signal to hook a client-side goal on, and a visit that starts on one is usually someone reopening a saved link.
+ */
+const CONVERSION_PAGES: { host: RegExp; path: RegExp; goal: string }[] = [
+  { host: /^class\.thetestingacademy\.com$/, path: /thank/i, goal: 'webinar_registered' },
+];
+const CONVERSION_GOALS = new Set(CONVERSION_PAGES.map((c) => c.goal));
+
+export function conversionGoal(hostname: string, path: string): string | null {
+  const host = stripWww(hostname);
+  return CONVERSION_PAGES.find((c) => c.host.test(host) && c.path.test(path))?.goal ?? null;
+}
+
 interface Payload {
   w: string;
   t: string;
@@ -158,14 +172,20 @@ export async function ingest(
     }
     stmts.push(insertEvent(db, site.id, sid, vid, now, 'pageview', null, path, null));
     stmts.push(...claimPayment(db, site.id, vid, url, now));
+    const goal = existing ? conversionGoal(url.hostname, path) : null;
+    if (goal) stmts.push(...insertGoalOnce(db, site.id, sid, vid, now, goal, path, null));
   } else if (t === 'goal') {
     const name = clip(body.n, 64);
     if (!name) return;
     const props = body.p && typeof body.p === 'object' ? JSON.stringify(body.p).slice(0, 1000) : null;
-    stmts.push(
-      db.prepare('UPDATE sessions SET goals = goals + 1, last_seen_at = ? WHERE site_id = ? AND id = ?').bind(now, site.id, sid),
-      insertEvent(db, site.id, sid, vid, now, 'goal', name, path, props),
-    );
+    if (CONVERSION_GOALS.has(name)) {
+      stmts.push(...insertGoalOnce(db, site.id, sid, vid, now, name, path, props));
+    } else {
+      stmts.push(
+        db.prepare('UPDATE sessions SET goals = goals + 1, last_seen_at = ? WHERE site_id = ? AND id = ?').bind(now, site.id, sid),
+        insertEvent(db, site.id, sid, vid, now, 'goal', name, path, props),
+      );
+    }
   } else if (t === 'outbound') {
     const target = clip(body.n, 500);
     if (!target) return;
@@ -203,6 +223,39 @@ function claimPayment(db: D1Database, siteId: string, vid: string, url: URL, now
          WHERE site_id = ? AND id = ?`,
       )
       .bind(siteId, paymentId, paymentId, siteId, paymentId, paymentId, siteId, vid),
+  ];
+}
+
+/**
+ * Records a conversion goal at most once per visit, so a reloaded thank-you page, or the page rule and a client-side
+ * goal firing together, still count one registration.
+ */
+function insertGoalOnce(
+  db: D1Database,
+  siteId: string,
+  sid: string,
+  vid: string,
+  ts: number,
+  name: string,
+  path: string,
+  props: string | null,
+): D1PreparedStatement[] {
+  return [
+    db
+      .prepare(
+        `INSERT INTO events (site_id, session_id, visitor_id, ts, type, name, path, props)
+         SELECT ?, ?, ?, ?, 'goal', ?, ?, ?
+         WHERE NOT EXISTS (SELECT 1 FROM events WHERE site_id = ? AND session_id = ? AND type = 'goal' AND name = ?)`,
+      )
+      .bind(siteId, sid, vid, ts, name, path, props, siteId, sid, name),
+    // Adds 1 only when the row above was inserted (same visit, name and timestamp), 0 for a duplicate.
+    db
+      .prepare(
+        `UPDATE sessions SET last_seen_at = ?,
+           goals = goals + (SELECT COUNT(*) FROM events WHERE site_id = ? AND session_id = ? AND type = 'goal' AND name = ? AND ts = ?)
+         WHERE site_id = ? AND id = ?`,
+      )
+      .bind(ts, siteId, sid, name, ts, siteId, sid),
   ];
 }
 
